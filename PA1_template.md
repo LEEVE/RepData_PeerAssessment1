@@ -11,22 +11,22 @@ output:
 
 ### Load packages
 
-```{r}
-#| label: setup
-#| message: false
-#| output: false
+
+```r
 library(tidyverse)
 ```
 
 ### Unzip folder
 
-```{r}
+
+```r
 unzip("D:/Education/R/Data/JH_C5_week2/repdata_data_activity.zip", exdir= "D:/Education/R/Data/JH_C5_week2/reproducable_walking_data")
 ```
 
 ### Read file
 
-```{r}
+
+```r
 activity <- read.csv("D:/Education/R/Data/JH_C5_week2/reproducable_walking_data/activity.csv")
 ```
 
@@ -36,8 +36,19 @@ activity <- read.csv("D:/Education/R/Data/JH_C5_week2/reproducable_walking_data/
 
 -   Covert date from "char" to *date type*
 
-```{r}
+
+```r
 str(activity)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : chr  "2012-10-01" "2012-10-01" "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
 activity$date <- ymd(activity$date)
 ```
 
@@ -53,7 +64,8 @@ activity$date <- ymd(activity$date)
 
 -   These will be helpful if we ever need to compare activity levels on weekdays vs weekends or even if we wish to explore a relationship between day of week and activity level
 
-```{r}
+
+```r
 activity <- activity |> 
         mutate(day_of_week = wday(date, week_start = 1))
 # create a weekend variable named weekend
@@ -74,7 +86,8 @@ Well I'll do both, because I'm curious myself regardless of the intent of the qu
 
 -   ***mean_perday*** now has two columns: *date* & *sum* where sum is the total steps taken per day
 
-```{r}
+
+```r
 mean_perday <- activity |> 
         group_by(date) |>
         summarise(sum = sum(steps))
@@ -84,9 +97,14 @@ mean_perday <- activity |>
 
 -   Now that we have a column of daily total number of steps taken we can simply sum them all together to get the total number of steps taken per day for the entire dataset and assign it to **total_steps** **=570608**
 
-```{r}
+
+```r
 total_steps <- sum(mean_perday$sum, na.rm = TRUE)
 total_steps
+```
+
+```
+## [1] 570608
 ```
 
 ### Mean & median
@@ -94,8 +112,14 @@ total_steps
 -   To calculate the mean and median of the total number of steps taken per day we make use of *summary()* which will give us the needed answers
 -   We get a **mean=10766 and a median=10765**
 
-```{r}
+
+```r
 summary(mean_perday$sum)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##      41    8841   10765   10766   13294   21194       8
 ```
 
 ### Histogram
@@ -104,11 +128,14 @@ summary(mean_perday$sum)
 
 -   The magenta line is the mean of the distribution
 
-```{r}
+
+```r
 with(mean_perday, hist(sum, col="green", breaks = 15,
                        main="Total Number of Steps per Day"))
 abline(v= mean(mean_perday$sum, na.rm=TRUE), col="magenta",lwd=4)
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
 
 # What is the average daily activity pattern?
 
@@ -120,7 +147,8 @@ abline(v= mean(mean_perday$sum, na.rm=TRUE), col="magenta",lwd=4)
 
 -   We'll save the results in ***activity_perinterval***
 
-```{r}
+
+```r
 activity_perinterval <- activity |> 
         aggregate(steps~interval, mean)
 ```
@@ -129,14 +157,16 @@ activity_perinterval <- activity |>
 
 -   Here we'll plot a time series line graph of the Average Daily Steps per interval to see if any pattern is evident
 
-```{r}
+
+```r
 ggplot(activity_perinterval, aes(interval,steps))+
         geom_line(color="blue") +
         labs(title = "Average Daily Steps per Interval", x="Interval", y="Avg Daily Steps")+
         scale_x_continuous(breaks = seq(0,2400, by=240))+
         theme_classic()
-
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
 ### Most active interval
 
@@ -160,8 +190,14 @@ From the plot it is evident that a range of intervals and in particular one inte
 >
 > -   **So interval 835 would be at 8:35 AM**
 
-```{r}
+
+```r
 activity_perinterval[which.max(activity_perinterval$steps),]
+```
+
+```
+##     interval    steps
+## 104      835 206.1698
 ```
 
 # Imputing missing values
@@ -174,9 +210,21 @@ activity_perinterval[which.max(activity_perinterval$steps),]
 
 -   Then we find out what percentage of the total rows are NAs **(which turns out to be 2.6%)**
 
-```{r}
+
+```r
 sum(is.na(activity))
+```
+
+```
+## [1] 2304
+```
+
+```r
 mean(is.na(activity))
+```
+
+```
+## [1] 0.02622951
 ```
 
 ## Replace NAs
@@ -191,7 +239,8 @@ mean(is.na(activity))
 
 -   Save the means in *interval_mean*
 
-```{r}
+
+```r
 activity_mean <- activity |> 
         group_by(interval) |> 
         mutate(interval_mean =  mean(steps, na.rm = TRUE))
@@ -203,7 +252,8 @@ activity_mean <- activity |>
 
 -   We save the new step values in *nona_steps*
 
-```{r}
+
+```r
 activity_mean$nona_steps <- coalesce(activity_mean$steps, activity_mean$interval_mean) 
 ```
 
@@ -215,12 +265,17 @@ activity_mean$nona_steps <- coalesce(activity_mean$steps, activity_mean$interval
 
 -   Total steps for all days are: **656737 compared to 570608 before replacing the NAs**
 
-```{r}
+
+```r
 nona_mean_perday <- activity_mean |> 
         group_by(date) |>
         summarise(sum = sum(nona_steps))
 nona_total_steps <- sum(nona_mean_perday$sum)
 nona_total_steps
+```
+
+```
+## [1] 656737.5
 ```
 
 ### Mean & median
@@ -231,8 +286,14 @@ nona_total_steps
 
 -   **We shouldn't have anticipated any major changes since we replace the NAs with the mean of each interval**
 
-```{r}
+
+```r
 summary(nona_mean_perday$sum)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    9819   10766   10766   12811   21194
 ```
 
 ### Histogram
@@ -241,10 +302,13 @@ summary(nona_mean_perday$sum)
 
 -   The magenta line is the mean of the distribution
 
-```{r}
+
+```r
 with(nona_mean_perday, hist(sum, col="green", breaks = 15, main="Total Number of Steps per Day"))
 abline(v= mean(nona_mean_perday$sum, na.rm=TRUE), col="magenta",lwd=4)
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ### Observation
 
@@ -264,20 +328,23 @@ It might not be glaring but the distribution now is more concentrated around the
 
 -   Load the lattice library since I'll use lattice for this last plot
 
-```{r}
+
+```r
 library(lattice)
 interval_weekday <- activity_mean |> 
         aggregate(nona_steps~interval + weekend, mean)
-
 ```
 
 ### Plot timeline
 
-```{r}
+
+```r
 xyplot(nona_steps~interval | weekend, interval_weekday,type="l",
        color="blue", xlab = "Interval", ylab = "Average Steps per Interval",
        pch=10, main="Weekend to Weekday Comparison",layout=c(1,2))
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 ### Observation
 
